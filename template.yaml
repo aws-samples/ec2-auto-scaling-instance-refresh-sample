@@ -1,0 +1,292 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: > 
+  "Sample solution to create a new launch template version with a new AMI created by EC2  
+  Image Builder and trigger an Auto Scaling group instance refresh"
+
+Metadata:
+  License:
+    Description: >
+      Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+      SPDX-License-Identifier: MIT-0
+      
+      Permission is hereby granted, free of charge, to any person obtaining a copy of this
+      software and associated documentation files (the "Software"), to deal in the Software
+      without restriction, including without limitation the rights to use, copy, modify,
+      merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+      permit persons to whom the Software is furnished to do so.
+      
+      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+      INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+      PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+      HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+      OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+      SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+  
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: "EC2 Image Builder Sample"
+  AmazonLinux2LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2"
+  BuildInstanceType:
+    Type: String
+    Default: "t3.micro"
+    Description: "Image Builder instance type"
+  SampleAutoScalingGroupInstanceType:
+    Type: String
+    Default: "t3.micro"
+    Description: Instance type for sample Auto Scaling group
+
+Resources:
+  InstanceRefreshHandler:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.7
+      MemorySize: 128
+      Timeout: 30
+      Role: !GetAtt InstanceRefreshHandlerLambdaRole.Arn
+      CodeUri: InstanceRefreshHandler/
+      Environment:
+        Variables:
+          AutoScalingGroupName: !Ref SampleAutoScalingGroup
+  
+  InstanceRefreshHandlerLambdaRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement: 
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/service-role/"
+      Policies:
+      - PolicyName: lambdaExecution-InstanceRefreshHandler
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            Resource: '*'
+          - Effect: Allow
+            Action:
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource: '*'
+          - Effect: Allow
+            Action:
+            - autoscaling:StartInstanceRefresh
+            - autoscaling:Describe*
+            - ec2:CreateLaunchTemplateVersion
+            - ec2:DescribeLaunchTemplates
+            Resource: '*'
+
+  ImageBuilderSNSTopic:
+    Type: "AWS::SNS::Topic"
+    Properties:
+      Subscription:
+        - Endpoint: !GetAtt InstanceRefreshHandler.Arn
+          Protocol: lambda
+          
+  SNSLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+        FunctionName: !GetAtt InstanceRefreshHandler.Arn
+        Action: lambda:InvokeFunction
+        Principal: sns.amazonaws.com
+        SourceArn: !Ref ImageBuilderSNSTopic
+
+  EC2ImageBuilderRecipe:
+    Type: AWS::ImageBuilder::ImageRecipe
+    Properties:
+      Name: SampleEC2ImageBuilderRecipe
+      Description: This recipe updates the system and installs Docker CE 
+      ParentImage: !Ref AmazonLinux2LatestAmiId
+      Components:
+        - ComponentArn: !Sub "arn:aws:imagebuilder:${AWS::Region}:aws:component/update-linux/1.0.0/1"
+        - ComponentArn: !Sub "arn:aws:imagebuilder:${AWS::Region}:aws:component/docker-ce-linux/1.0.0/1"
+        - ComponentArn: !Sub "arn:aws:imagebuilder:${AWS::Region}:aws:component/reboot-linux/1.0.1/1"
+      Version: "1.0.0"
+      
+  EC2ImageBuilderPipeline:
+    Type: AWS::ImageBuilder::ImagePipeline
+    Properties:
+      Name: SampleAmazon2WithDockerPipeline
+      ImageRecipeArn: !Ref EC2ImageBuilderRecipe
+      InfrastructureConfigurationArn: !Ref EC2ImageBuilderInfrastructureConfiguration
+  
+  EC2ImageBuilderInfrastructureConfiguration:
+    Type: AWS::ImageBuilder::InfrastructureConfiguration
+    Properties: 
+      Name: SampleInstanceConfigurationForEC2ImageBuilder
+      InstanceTypes: 
+        - !Ref BuildInstanceType
+      InstanceProfileName: !Ref EC2ImageBuilderIAMInstanceProfile
+      SNSTopicArn: !Ref ImageBuilderSNSTopic
+      SubnetId: !Ref PublicSubnet1
+      SecurityGroupIds: 
+        - !GetAtt VPC.DefaultSecurityGroup
+      TerminateInstanceOnFailure: true
+  
+  EC2ImageBuilderIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action: 
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/EC2InstanceProfileForImageBuilder
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+  
+  EC2ImageBuilderIAMInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref EC2ImageBuilderIAMRole
+  
+  SampleAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      MinSize: "0"
+      MaxSize: "4"
+      DesiredCapacity: "2"
+      VPCZoneIdentifier:
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+        - !Ref PublicSubnet3
+      LaunchTemplate: 
+        LaunchTemplateId: !Ref SampleLaunchTemplate
+        Version: !GetAtt SampleLaunchTemplate.LatestVersionNumber
+      Tags:
+        - Key: Name
+          Value: !Ref EnvironmentName
+          PropagateAtLaunch: true
+  
+  SampleLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        ImageId: !Ref AmazonLinux2LatestAmiId
+        InstanceType: !Ref SampleAutoScalingGroupInstanceType
+        SecurityGroupIds:
+          - !GetAtt VPC.DefaultSecurityGroup
+  
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: "10.0.0.0/16"
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+      - Key: Name
+        Value: !Ref EnvironmentName
+  
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref EnvironmentName
+  
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+  
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: "10.0.0.0/24"
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Subnet (AZ1)
+  
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 1, !GetAZs  '' ]
+      CidrBlock: "10.0.1.0/24"
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Subnet (AZ2)
+  
+  PublicSubnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [ 2, !GetAZs  '' ]
+      CidrBlock: "10.0.2.0/24"
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Subnet (AZ3)
+   
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Routes
+  
+  DefaultPublicRoute:
+     Type: AWS::EC2::Route
+     DependsOn: InternetGatewayAttachment
+     Properties:
+       RouteTableId: !Ref PublicRouteTable
+       DestinationCidrBlock: 0.0.0.0/0
+       GatewayId: !Ref InternetGateway
+  
+  PublicSubnet1RouteTableAssociation:
+     Type: AWS::EC2::SubnetRouteTableAssociation
+     Properties:
+       RouteTableId: !Ref PublicRouteTable
+       SubnetId: !Ref PublicSubnet1
+  
+  PublicSubnet2RouteTableAssociation:
+     Type: AWS::EC2::SubnetRouteTableAssociation
+     Properties:
+       RouteTableId: !Ref PublicRouteTable
+       SubnetId: !Ref PublicSubnet2
+   
+  PublicSubnet3RouteTableAssociation:
+     Type: AWS::EC2::SubnetRouteTableAssociation
+     Properties:
+       RouteTableId: !Ref PublicRouteTable
+       SubnetId: !Ref PublicSubnet3
+
+Outputs:
+  EC2ImageBuilderPipeline:
+    Description: Sample EC2 Image Builder Pipeline 
+    Value: !Ref EC2ImageBuilderPipeline
+  SNSTopic:
+    Description: Amazon SNS topic subscribed to the EC2 Image Builder pipeline to trigger Lambda
+    Value: !Ref ImageBuilderSNSTopic
+  LambdaFunction:
+    Description: AWS Lambda function handling EC2 Image Builder Notifications and triggering Auto Scaling Instance Refresh
+    Value: !Ref InstanceRefreshHandler
+  SampleAutoScalingGroup:
+    Description: Sample Auto Scaling group 
+    Value: !Ref SampleAutoScalingGroup
+  LaunchTemplate:
+    Description: Sample Launch Template for Auto Scaling group
+    Value: !Ref SampleLaunchTemplate

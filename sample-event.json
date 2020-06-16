@@ -1,0 +1,31 @@
+{
+    "Records": [
+      {
+        "EventSource": "aws:sns",
+        "EventVersion": "1.0",
+        "EventSubscriptionArn": "arn:aws:sns:us-east-1::ExampleTopic",
+        "Sns": {
+          "Type": "Notification",
+          "MessageId": "95df01b4-ee98-5cb9-9903-4c221d41eb5e",
+          "TopicArn": "arn:aws:sns:us-east-1:123456789012:ExampleTopic",
+          "Subject": "example subject",
+          "Message": "{\n  \"versionlessArn\": \"arn:aws:imagebuilder:us-east-1:123456789101:image/test-recipe\",\n  \"semver\": 1237940039285380274899124225,\n  \"arn\": \"arn:aws:imagebuilder:us-east-1:123456789101:image/test-recipe/1.0.0/1\",\n  \"name\": \"test-recipe\",\n  \"version\": \"1.0.0\",\n  \"buildVersion\": 1,\n  \"state\": {\n    \"status\": \"AVAILABLE\"\n  },\n  \"platform\": \"Linux\",\n  \"imageRecipe\": {\n    \"arn\": \"arn:aws:imagebuilder:us-east-1:123456789101:image-recipe/test-recipe/1.0.0\",\n    \"name\": \"test-recipe\",\n    \"version\": \"1.0.0\",\n    \"components\": [\n      {\n        \"componentArn\": \"arn:aws:imagebuilder:us-east-1:627945338248:component/reboot-test-linux/1.0.0/1\"\n      },\n      {\n        \"componentArn\": \"arn:aws:imagebuilder:us-east-1:627945338248:component/powershell-core-linux/6.2.4/1\"\n      },\n      {\n        \"componentArn\": \"arn:aws:imagebuilder:us-east-1:627945338248:component/php-7-2-linux/1.0.0/1\"\n      }\n    ],\n    \"platform\": \"Linux\",\n    \"parentImage\": \"arn:aws:imagebuilder:us-east-1:627945338248:image/amazon-linux-2-x86/2020.5.27/1\",\n    \"dateCreated\": \"Jun 3, 2020 3:04:11 PM\",\n    \"tags\": {\n      \"internalId\": \"7d1f2ac0-12f1-49f8-873f-0cb8b593de24\",\n      \"resourceArn\": \"arn:aws:imagebuilder:us-east-1:123456789101:image-recipe/test-recipe/1.0.0\"\n    },\n    \"accountId\": \"123456789101\"\n  },\n  \"sourcePipelineArn\": \"arn:aws:imagebuilder:us-east-1:123456789101:image-pipeline/test-image-builder-pipeline\",\n  \"infrastructureConfiguration\": {\n    \"arn\": \"arn:aws:imagebuilder:us-east-1:123456789101:infrastructure-configuration/test-image-builder-pipeline-infrastructureconfiguration-d75395913b32\",\n    \"name\": \"test-image-builder-pipeline-infrastructureConfiguration-d75395913b32\",\n    \"instanceTypes\": [\n      \"m4.large\"\n    ],\n    \"instanceProfileName\": \"EC2RoleForImageBuilderInstance\",\n    \"securityGroupIds\": [\n      \"sg-xxxxxxxxxx\"\n    ],\n    \"subnetId\": \"subnet-xxxxxxxxxxxxx\",\n    \"tags\": {\n      \"internalId\": \"5ebbdb9f-37f7-47e1-aeab-49d71aba1c12\",\n      \"resourceArn\": \"arn:aws:imagebuilder:us-east-1:123456789101:infrastructure-configuration/test-image-builder-pipeline-infrastructureconfiguration-d75395913b32\"\n    },\n    \"logging\": {\n      \"s3Logs\": {\n        \"s3BucketName\": \"aws-logs-123456789101-us-east-1\",\n        \"s3KeyPrefix\": \"image-builder\"\n      }\n    },\n    \"terminateInstanceOnFailure\": true,\n    \"snsTopicArn\": \"arn:aws:sns:us-east-1:123456789101:image-builder-topic\",\n    \"dateCreated\": \"Jun 3, 2020 3:14:19 PM\",\n    \"accountId\": \"123456789101\"\n  },\n  \"imageTestsConfigurationDocument\": {\n    \"imageTestsEnabled\": true,\n    \"timeoutMinutes\": 720\n  },\n  \"distributionConfiguration\": {\n    \"arn\": \"arn:aws:imagebuilder:us-east-1:123456789101:distribution-configuration/test-image-builder-pipeline-distributionconfiguration-4265eb8ac0dc\",\n    \"name\": \"test-image-builder-pipeline-distributionConfiguration-4265eb8ac0dc\",\n    \"dateCreated\": \"Jun 3, 2020 3:14:19 PM\",\n    \"distributions\": [\n      {\n        \"region\": \"us-east-1\",\n        \"amiDistributionConfiguration\": {\n          \"name\": \"test-builder-ami 2020-06-03T15-39-02.897Z\",\n          \"amiTags\": {\n            \"ami-alias\": \"test-alias\"\n          }\n        }\n      }\n    ],\n    \"tags\": {\n      \"internalId\": \"4c133101-9494-4fd1-a044-7250e2b32388\",\n      \"resourceArn\": \"arn:aws:imagebuilder:us-east-1:123456789101:distribution-configuration/test-image-builder-pipeline-distributionconfiguration-4265eb8ac0dc\"\n    },\n    \"accountId\": \"123456789101\"\n  },\n  \"dateCreated\": \"Jun 3, 2020 3:39:02 PM\",\n  \"outputResources\": {\n    \"amis\": [\n      {\n        \"region\": \"us-east-1\",\n        \"image\": \"place-here-your-test-ami-id\",\n        \"name\": \"test-builder-ami 2020-06-03T15-39-02.897Z\"\n      }\n    ]\n  },\n  \"buildExecutionId\": \"ad08236c-691a-4aa5-a1f1-16938b51369c\",\n  \"testExecutionId\": \"e8fa9637-0dc0-4876-897c-0e8d421789de\",\n  \"distributionJobId\": \"bf9e9be2-0a71-4592-9f25-e86929349db6\",\n  \"integrationJobId\": \"d84b1693-90cb-44c4-85c1-9674bcca2e36\",\n  \"accountId\": \"123456789101\",\n  \"enhancedImageMetadataEnabled\": false,\n  \"tags\": {\n    \"internalId\": \"bac4b6e8-757c-456e-a5ae-5e01d5d324e7\",\n    \"resourceArn\": \"arn:aws:imagebuilder:us-east-1:123456789101:image/test-recipe/1.0.0/1\"\n  }\n}",
+          "Timestamp": "1970-01-01T00:00:00.000Z",
+          "SignatureVersion": "1",
+          "Signature": "EXAMPLE",
+          "SigningCertUrl": "EXAMPLE",
+          "UnsubscribeUrl": "EXAMPLE",
+          "MessageAttributes": {
+            "Test": {
+              "Type": "String",
+              "Value": "TestString"
+            },
+            "TestBinary": {
+              "Type": "Binary",
+              "Value": "TestBinary"
+            }
+          }
+        }
+      }
+    ]
+  }

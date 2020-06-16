@@ -1,0 +1,8 @@
+# SAM Cache
+.aws-sam
+
+# Packaged Template
+packaged.yaml
+
+# System Files
+.DS_Store
