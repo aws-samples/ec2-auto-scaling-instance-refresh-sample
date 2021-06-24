@@ -44,7 +44,7 @@ Resources:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: lambda_function.lambda_handler
-      Runtime: python3.7
+      Runtime: python3.8
       MemorySize: 128
       Timeout: 30
       Role: !GetAtt InstanceRefreshHandlerLambdaRole.Arn
@@ -52,7 +52,8 @@ Resources:
       Environment:
         Variables:
           AutoScalingGroupName: !Ref SampleAutoScalingGroup
-  
+          LaunchTemplateId: !Ref SampleLaunchTemplate
+
   InstanceRefreshHandlerLambdaRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -82,10 +83,13 @@ Resources:
             Resource: '*'
           - Effect: Allow
             Action:
+            #https://docs.aws.amazon.com/autoscaling/ec2/userguide/ec2-auto-scaling-launch-template-permissions.html
             - autoscaling:StartInstanceRefresh
             - autoscaling:Describe*
+            - autoscaling:UpdateAutoScalingGroup
             - ec2:CreateLaunchTemplateVersion
             - ec2:DescribeLaunchTemplates
+            - ec2:RunInstances
             Resource: '*'
 
   ImageBuilderSNSTopic:
@@ -121,7 +125,8 @@ Resources:
       Name: SampleAmazon2WithDockerPipeline
       ImageRecipeArn: !Ref EC2ImageBuilderRecipe
       InfrastructureConfigurationArn: !Ref EC2ImageBuilderInfrastructureConfiguration
-  
+      DistributionConfigurationArn: !Ref EC2ImageBuilderDistributionConfiguration
+
   EC2ImageBuilderInfrastructureConfiguration:
     Type: AWS::ImageBuilder::InfrastructureConfiguration
     Properties: 
@@ -134,7 +139,23 @@ Resources:
       SecurityGroupIds: 
         - !GetAtt VPC.DefaultSecurityGroup
       TerminateInstanceOnFailure: true
-  
+
+  EC2ImageBuilderDistributionConfiguration:
+    Type: AWS::ImageBuilder::DistributionConfiguration
+    Properties:
+      Name: SampleDistributionConfigurationForEC2ImageBuilder
+      Distributions:
+      - AmiDistributionConfiguration:
+          Name: SampleAmazon2WithDockerAmi - {{ imagebuilder:buildDate }}
+          LaunchPermissionConfiguration:
+            UserIds:
+            - !Sub ${AWS::AccountId}
+        Region: !Sub ${AWS::Region}
+        LaunchTemplateConfigurations:
+          - LaunchTemplateId: !Ref SampleLaunchTemplate
+            AccountId: !Sub ${AWS::AccountId}
+            SetDefaultVersion: true
+
   EC2ImageBuilderIAMRole:
     Type: AWS::IAM::Role
     Properties:

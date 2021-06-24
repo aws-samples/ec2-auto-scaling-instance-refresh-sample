@@ -89,30 +89,23 @@ You will find all the resources created on the [AWS CloudFormation console](http
 
 ## Testing the solution
 
-Before getting started, configure the sample Auto Scaling group to use the $LATEST version of the Launch Template, so whenever a new version is created, Auto Scaling uses it to launch new instances.
-1. Go to the [EC2 Auto Scaling console](https://console.aws.amazon.com/ec2autoscaling/home#/details)
-1. Select the Auto Scaling group named `ec2-auto-scaling-instance-refresh-sample-SampleAutoScalingGroup-*` and click on the `Edit` button
-1. Scroll down to the `Launch Template` section and on the `Version` drop-down menu select `Latest (1)`
-   ![Edit Auto Scaling Group](/images/edit-auto-scaling-group.png)
-1. Scroll down to the very bottom and then click `Update`
-
-Now, you can trigger the EC2 Image Builder Pipeline.
+Trigger the EC2 Image Builder Pipeline.
 1. [Go to the EC2 Image Builder console](https://console.aws.amazon.com/imagebuilder/home?#viewPipeline)
-1. Click on the `SampleAmazon2WithDockerPipeline` pipeline
-1. Click on the `Actions` button on the top-right side of the console, and select `Run pipeline`
-1. Wait until the pipeline finishes (it will take ~20 minutes to complete). You can refresh the `Output image` section clicking the circle arrow button on the right side of the console.
+2. Click on the `SampleAmazon2WithDockerPipeline` pipeline
+3. Click on the `Actions` button on the top-right side of the console, and select `Run pipeline`
+4. Wait until the pipeline finishes (it will take ~20 minutes to complete). You can refresh the `Output image` section clicking the circle arrow button on the right side of the console.
     ![Image Builder console](/images/image-builder-console.png)
-1. (Optional) If you want to get notified when Image Builder finishes, you can [subscribe your e-mail to the SNS topic](https://docs.aws.amazon.com/sns/latest/dg/sns-getting-started.html#step-send-message)
-1. Click on the image version that's been created to see the AMI id that's been created.
+5. (Optional) If you want to get notified when Image Builder finishes, you can [subscribe your e-mail to the SNS topic](https://docs.aws.amazon.com/sns/latest/dg/sns-getting-started.html#step-send-message)
+6. Click on the image version that's been created to see the AMI id that's been created.
 
 Once the new image is built, you can check your Auto Scaling group and watch the instance refresh action.
 1. Go to the [EC2 Auto Scaling console](https://console.aws.amazon.com/ec2autoscaling/home#/details)
-1. Select the Auto Scaling group named `ec2-image-builder-instance-refresh-sample-SampleAuto ScalingGroup-*`. Then go to the `Instance Refresh` tab and you will see the instance refresh in progress.
-1. You can also see the instance refresh events on the Activity tab.
+2. Select the Auto Scaling group named `ec2-image-builder-instance-refresh-sample-SampleAuto ScalingGroup-*`. Then go to the `Instance Refresh` tab and you will see the instance refresh in progress.
+3. You can also see the instance refresh events on the Activity tab.
     ![Auto Scaling activity](/images/asg-instance-refresh-activity-history.png)
-1. You can also check on the EC2 Instances console and see how instances are shut down and new instances are launched.
+4. You can also check on the EC2 Instances console and see how instances are shut down and new instances are launched.
     ![Instance Refresh](/images/ec2-instance-refresh.png)
-1. Once it finishes, check the Auto Scaling group instances AMI on the EC2 Instances console (filter by Tag Name value `EC2 Image Builder Sample`). Select an instance and on the `Launch Configuration` tab you will find the AMI id. 
+5. Once it finishes, check the Auto Scaling group instances AMI on the EC2 Instances console (filter by Tag Name value `EC2 Image Builder Sample`). Select an instance and on the `Launch Configuration` tab you will find the AMI id. 
 
 Feel free to also inspect the AWS Lambda function and the logs on the [CloudWatch logs console](https://console.aws.amazon.com/cloudwatch/home?#logsV2:log-groups).
 
