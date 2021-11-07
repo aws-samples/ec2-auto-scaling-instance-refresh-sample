@@ -134,7 +134,7 @@ Resources:
       InstanceTypes: 
         - !Ref BuildInstanceType
       InstanceProfileName: !Ref EC2ImageBuilderIAMInstanceProfile
-      SNSTopicArn: !Ref ImageBuilderSNSTopic
+      SnsTopicArn: !Ref ImageBuilderSNSTopic
       SubnetId: !Ref PublicSubnet1
       SecurityGroupIds: 
         - !GetAtt VPC.DefaultSecurityGroup
